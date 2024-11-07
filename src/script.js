@@ -32,6 +32,30 @@ const environmentMapTexture = cubeTextureLoader.load([
   "/textures/environmentMaps/0/nz.png",
 ]);
 
+// ! physics
+
+// world
+const world = new CANNON.World();
+// earths gravity value
+world.gravity.set(0, -9.82, 0);
+
+// sphere
+const sphereShape = new CANNON.Sphere(0.5);
+const sphereBody = new CANNON.Body({
+  mass: 1,
+  position: new CANNON.Vec3(0, 3, 0),
+  shape: sphereShape,
+});
+world.addBody(sphereBody);
+
+// floor
+const floorShape = new CANNON.Plane();
+const floorBody = new CANNON.Body();
+floorBody.mass = 0;
+floorBody.quaternion.setFromAxisAngle(new CANNON.Vec3(-1, 0, 0), Math.PI * 0.5);
+floorBody.addShape(floorShape);
+world.addBody(floorBody);
+
 /**
  * Test sphere
  */
@@ -136,12 +160,21 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
  * Animate
  */
 const clock = new THREE.Clock();
+let oldElapsedTime = 0;
 
 const tick = () => {
   const elapsedTime = clock.getElapsedTime();
+  const deltaTime = elapsedTime - oldElapsedTime;
+  oldElapsedTime = elapsedTime;
 
   // Update controls
   controls.update();
+
+  // update physics world
+  world.step(1 / 60, deltaTime, 3);
+
+  // update sphere position with physics world position
+  sphere.position.copy(sphereBody.position);
 
   // Render
   renderer.render(scene, camera);
