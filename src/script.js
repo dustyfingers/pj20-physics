@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import GUI from "lil-gui";
-import CANNON from "cannon";
+import CANNON, { Material } from "cannon";
 
 /**
  * Debug
@@ -39,13 +39,31 @@ const world = new CANNON.World();
 // earths gravity value
 world.gravity.set(0, -9.82, 0);
 
+// physics materials
+const defaultMaterial = new CANNON.Material("default");
+
+// contact material
+const defaultContactMaterial = new CANNON.ContactMaterial(
+  defaultMaterial,
+  defaultMaterial,
+  { friction: 0.1, restitution: 0.7 }
+);
+
+world.addContactMaterial(defaultContactMaterial);
+world.defaultContactMaterial = defaultContactMaterial;
+
 // sphere
 const sphereShape = new CANNON.Sphere(0.5);
 const sphereBody = new CANNON.Body({
   mass: 1,
   position: new CANNON.Vec3(0, 3, 0),
   shape: sphereShape,
+  material: defaultMaterial,
 });
+sphereBody.applyLocalForce(
+  new CANNON.Vec3(150, 0, 0),
+  new CANNON.Vec3(0, 0, 0)
+);
 world.addBody(sphereBody);
 
 // floor
@@ -54,6 +72,7 @@ const floorBody = new CANNON.Body();
 floorBody.mass = 0;
 floorBody.quaternion.setFromAxisAngle(new CANNON.Vec3(-1, 0, 0), Math.PI * 0.5);
 floorBody.addShape(floorShape);
+floorBody.material = defaultMaterial;
 world.addBody(floorBody);
 
 /**
@@ -169,6 +188,9 @@ const tick = () => {
 
   // Update controls
   controls.update();
+
+  // update forces
+  sphereBody.applyForce(new CANNON.Vec3(-0.8, 0, 0), sphereBody.position);
 
   // update physics world
   world.step(1 / 60, deltaTime, 3);
